@@ -26,7 +26,7 @@ export default function Dashboard() {
 
       <div className="content">
         <div className="topbar">
-          <h1>My Tasks</h1>
+          <h1 className="font-white">My Tasks</h1>
           <input type="text" className="search-bar" placeholder="Filter and search" />
         </div>
 
