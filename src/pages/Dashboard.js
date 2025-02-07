@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "../styles/dashboard.css";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -19,7 +20,7 @@ export default function Dashboard() {
           <li>📅 Calendar</li>
           <li>📄 Online Documents</li>
           <li>📖 Booking</li>
-          <li>✅ Task Status</li>
+          <li><Link to="/task-status">✅ Task Status</Link></li>
           <li>👤 Employee Details</li>
         </ul>
       </nav>
