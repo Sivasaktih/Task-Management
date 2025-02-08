@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login"; // Import the Login component
 import SignUp from "./pages/Signup";
 import Dashboard from "./pages/Dashboard"; // Placeholder for Dashboard
-import TaskStatus from "./pages/TastStatus";
+import TaskStatus from "./pages/TaskStatus";
 
 const App = () => {
   return (
