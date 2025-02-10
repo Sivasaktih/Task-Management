@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/dashboard.css";
-
+import PeopleIcon from "@mui/icons-material/People";
+import DescriptionIcon from "@mui/icons-material/Description";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import EventIcon from "@mui/icons-material/Event";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
+import PersonIcon from "@mui/icons-material/Person";
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ name: "", description: "", date: "", file: null });
@@ -14,15 +19,38 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       <nav className="sidebar">
-        <ul>
-          <li>Tasks & Projects</li>
-          <li><Link to="" className="w-full h-full block">👥 Collaboration</Link></li>
-          <li><Link to="" className="w-full h-full block">📄 Online Documents</Link></li>
-          <li><Link to="" className="w-full h-full block">📅 Calendar</Link></li>
-          <li><Link to="" className="w-full h-full block">📖 Booking</Link></li>
-          <li><Link to="/task-status" className="w-full h-full block">✅ Task Status</Link></li>
-          <li><Link to="" className="w-full h-full block">👤 Employee Details</Link></li>
-        </ul>
+      <ul>
+      <li>
+        <Link to="" className="w-full h-full flex items-center gap-2">
+          <PeopleIcon /> Collaboration
+        </Link>
+      </li>
+      <li>
+        <Link to="" className="w-full h-full flex items-center gap-2">
+          <DescriptionIcon /> Online Documents
+        </Link>
+      </li>
+      <li>
+        <Link to="" className="w-full h-full flex items-center gap-2">
+          <CalendarTodayIcon /> Calendar
+        </Link>
+      </li>
+      <li>
+        <Link to="" className="w-full h-full flex items-center gap-2">
+          <EventIcon /> Booking
+        </Link>
+      </li>
+      <li>
+        <Link to="/task-status" className="w-full h-full flex items-center gap-2">
+          <TaskAltIcon /> Task Status
+        </Link>
+      </li>
+      <li>
+        <Link to="" className="w-full h-full flex items-center gap-2">
+          <PersonIcon /> Employee Details
+        </Link>
+      </li>
+    </ul>
       </nav>
 
       <div className="content">
