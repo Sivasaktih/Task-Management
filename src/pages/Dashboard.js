@@ -21,7 +21,7 @@ export default function Dashboard() {
           <li><Link to="" className="w-full h-full block">📅 Calendar</Link></li>
           <li><Link to="" className="w-full h-full block">📖 Booking</Link></li>
           <li><Link to="/task-status" className="w-full h-full block">✅ Task Status</Link></li>
-          <li><Link to="/task-status" className="w-full h-full block">👤 Employee Details</Link></li>
+          <li><Link to="" className="w-full h-full block">👤 Employee Details</Link></li>
         </ul>
       </nav>
 
