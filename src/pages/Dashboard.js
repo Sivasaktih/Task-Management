@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import "../styles/dashboard.css";
 
 export default function Dashboard() {
@@ -15,18 +16,18 @@ export default function Dashboard() {
       <nav className="sidebar">
         <ul>
           <li>Tasks & Projects</li>
-          <li>👥 Collaboration</li>
-          <li>📅 Calendar</li>
-          <li>📄 Online Documents</li>
-          <li>📖 Booking</li>
-          <li>✅ Task Status</li>
-          <li>👤 Employee Details</li>
+          <li><Link to="" className="w-full h-full block">👥 Collaboration</Link></li>
+          <li><Link to="" className="w-full h-full block">📄 Online Documents</Link></li>
+          <li><Link to="" className="w-full h-full block">📅 Calendar</Link></li>
+          <li><Link to="" className="w-full h-full block">📖 Booking</Link></li>
+          <li><Link to="/task-status" className="w-full h-full block">✅ Task Status</Link></li>
+          <li><Link to="/task-status" className="w-full h-full block">👤 Employee Details</Link></li>
         </ul>
       </nav>
 
       <div className="content">
         <div className="topbar">
-          <h1>My Tasks</h1>
+          <h1 className="text-white">My Tasks</h1>
           <input type="text" className="search-bar" placeholder="Filter and search" />
         </div>
 
