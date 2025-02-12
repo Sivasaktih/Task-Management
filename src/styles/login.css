@@ -13,6 +13,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 95vh;
+    margin-bottom: 70px;
 }
 
 .split-container {
