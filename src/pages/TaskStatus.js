@@ -5,6 +5,7 @@ import BuildIcon from '@mui/icons-material/Build'; // In Progress
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Completed
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom'; // Due (Overdue)
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Sidebar from "./Sidebar";
 
 
 export default function TaskStatus() {
@@ -26,6 +27,10 @@ export default function TaskStatus() {
   }, [tasks]);
 
   return (
+    <>
+    {/* <div>
+    <Sidebar />
+    </div> */}
     <div className="task-status-page p-6 bg-blue-100 h-screen">
      <div className="flex items-center bg-blue-500 mb-6">
         <Link to="/dashboard" className="text-blue-500 underline ml-4">
@@ -64,6 +69,7 @@ export default function TaskStatus() {
 </div>
 
     </div>
+    </>
   );
 }
 
