@@ -1,16 +1,10 @@
 // routes/userRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const User = require('../Models/User'); // adjust path as needed
+const { getUserProfile, updateUserProfile } = require("../controllers/userController");
+const { protect } = require("../middleware/authMiddleware");
 
-// GET all users
-router.get('/', async (req, res) => {
-  try {
-    const users = await User.find(); // you can use .select('name email') to limit fields
-    res.json({ users });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch users' });
-  }
-});
+router.get("/profile", protect, getUserProfile);
+router.put("/profile", protect, updateUserProfile);
 
 module.exports = router;

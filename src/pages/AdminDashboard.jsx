@@ -1,237 +1,278 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
 import AdminProjectCard from "../components/AdminProjectCard";
 
 const AdminDashboard = () => {
-  const [projects, setProjects] = useState([]);
-  const [newTask, setNewTask] = useState("");
-  const [assignedUser, setAssignedUser] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [priority, setPriority] = useState("");
-  const [file, setFile] = useState(null);
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
-  const [error, setError] = useState("");
+  const [admin, setAdmin] = useState(null);
   const [users, setUsers] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [tasks, setTasks] = useState([]);
+
+  const [form, setForm] = useState({
+    task: "",
+    email: "",
+    dueDate: "",
+    priority: "low",
+    fileType: "",
+    file: null,
+    taskId: null,
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [projectsRes, usersRes] = await Promise.all([
-          fetch("http://localhost:8080/api/projects"),
-          fetch("http://localhost:8080/api/users"),
-        ]);
+        const userRes = await axios.get("http://localhost:8080/api/auth/me", {
+          withCredentials: true,
+        });
+        setAdmin(userRes.data);
 
-        const projectsData = await projectsRes.json();
-        const usersData = await usersRes.json();
+        const usersRes = await axios.get("http://localhost:8080/api/admin/users", {
+          withCredentials: true,
+        });
+        setUsers(usersRes.data.users || []);
 
-        setProjects(projectsData.projects);
-        setUsers(usersData.users);
+        const taskRes = await axios.get("http://localhost:8080/api/tasks", {
+          withCredentials: true,
+        });
+        setTasks(taskRes.data.tasks || []);
       } catch (err) {
-        setError("Error fetching data");
+        toast.error("Unauthorized or failed to fetch data.");
       }
     };
 
-    fetchData();
+    fetchInitialData();
   }, []);
 
-  const handleCreateOrUpdateTask = async () => {
-    if (!newTask || !assignedUser || !dueDate || !priority) {
-      setError("All fields are required");
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { task, email, dueDate, priority, file, fileType, taskId } = form;
+
+    if (!task || !email || !dueDate || !priority) {
+      toast.error("All fields are required");
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append("task", newTask);
-      formData.append("userName", assignedUser);
+      formData.append("task", task);
+      formData.append("email", email);
       formData.append("dueDate", dueDate);
-      formData.append("progress", progress);
       formData.append("priority", priority);
-      if (file) formData.append("file", file);
-      if (image) formData.append("image", image);
+      formData.append("userName", admin?.adminName || "Admin");
 
-      const url = editingId
-        ? `http://localhost:8080/api/projects/${editingId}`
-        : "http://localhost:8080/api/projects";
+      if (file && fileType === "file") formData.append("file", file);
+      if (file && fileType === "image") formData.append("image", file);
 
-      const method = editingId ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Task operation failed");
-
-      const result = await response.json();
-
-      // If POST, add the new project to the list; if PUT, update existing
-      if (editingId) {
-        setProjects((prev) =>
-          prev.map((p) => (p._id === editingId ? result.project : p))
-        );
+      if (taskId) {
+        await axios.put(`http://localhost:8080/api/tasks/${taskId}`, formData, {
+          withCredentials: true,
+        });
+        toast.success("Task updated successfully");
       } else {
-        setProjects((prev) => [...prev, result.project]);
+        await axios.post("http://localhost:8080/api/tasks", formData, {
+          withCredentials: true,
+        });
+        toast.success("Task assigned successfully");
       }
 
-      resetForm();
-    } catch (err) {
-      setError("Error saving task");
-    }
-  };
-
-  const resetForm = () => {
-    setNewTask("");
-    setAssignedUser("");
-    setDueDate("");
-    setProgress(0);
-    setPriority("");
-    setFile(null);
-    setImage(null);
-    setImagePreview("");
-    setEditingId(null);
-  };
-
-  const handleEdit = (project) => {
-    setNewTask(project.task);
-    setAssignedUser(project.userName);
-    setDueDate(project.dueDate);
-    setProgress(project.progress);
-    setPriority(project.priority);
-    setEditingId(project._id || project.id);
-  };
-
-  const handleDelete = async (id) => {
-    const confirm = window.confirm(
-      "Are you sure you want to delete this task?"
-    );
-    if (!confirm) return;
-
-    try {
-      const response = await fetch(`http://localhost:8080/api/projects/${id}`, {
-        method: "DELETE",
+      setForm({
+        task: "",
+        email: "",
+        dueDate: "",
+        priority: "low",
+        fileType: "",
+        file: null,
+        taskId: null,
       });
 
-      if (!response.ok) throw new Error("Delete failed");
-
-      const result = await response.json();
-      setProjects(result.projects);
+      const taskRes = await axios.get("http://localhost:8080/api/tasks", {
+        withCredentials: true,
+      });
+      setTasks(taskRes.data.tasks || []);
     } catch (err) {
-      setError("Error deleting task");
+      toast.error(taskId ? "Failed to update task" : "Failed to assign task");
     }
   };
 
-  return (
-    <div className="flex">
-      <div className="flex-1 bg-blue-100 p-6">
-        <div className="bg-white p-6 shadow-lg rounded-lg mb-8">
-          <h2 className="font-bold text-xl mb-4">
-            {editingId ? "Edit Task" : "Create and Assign a Task"}
-          </h2>
+  const handleEdit = async (taskId) => {
+    try {
+      const taskToEdit = tasks.find((task) => task._id === taskId);
+      if (!taskToEdit) return toast.error("Task not found");
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      setForm({
+        task: taskToEdit.task,
+        email: taskToEdit.email,
+        dueDate: taskToEdit.dueDate.split("T")[0],
+        priority: taskToEdit.priority,
+        fileType: taskToEdit.fileUrl ? "file" : taskToEdit.imageUrl ? "image" : "",
+        file: null,
+        taskId,
+      });
+    } catch (err) {
+      toast.error("Failed to load task for editing");
+    }
+  };
+
+  const handleDelete = async (taskId) => {
+    try {
+      await axios.delete(`http://localhost:8080/api/tasks/${taskId}`, {
+        withCredentials: true,
+      });
+      toast.success("Task deleted successfully");
+      setTasks(tasks.filter((task) => task._id !== taskId));
+    } catch (err) {
+      toast.error("Failed to delete task");
+    }
+  };
+
+  // Calculate task metrics
+  const totalTasks = tasks.length;
+  const toDoTasks = tasks.filter((task) => (task.progress || 0) === 0).length;
+  const activeTasks = tasks.filter((task) => (task.progress || 0) > 0 && (task.progress || 0) < 100).length;
+  const completedTasks = tasks.filter((task) => (task.progress || 0) === 100).length;
+  const overdueTasks = tasks.filter((task) => {
+    const dueDate = new Date(task.dueDate);
+    return dueDate < new Date();
+  }).length;
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 flex flex-col">
+      {/* Top Section: Metric Cards */}
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-blue-700">Admin Dashboard</h1>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600">Total Tasks</h3>
+            <p className="text-lg sm:text-2xl font-bold text-blue-700">{totalTasks}</p>
+          </div>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600">To-Do Tasks</h3>
+            <p className="text-lg sm:text-2xl font-bold text-gray-700">{toDoTasks}</p>
+          </div>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600">Active Tasks</h3>
+            <p className="text-lg sm:text-2xl font-bold text-yellow-700">{activeTasks}</p>
+          </div>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600">Completed Tasks</h3>
+            <p className="text-lg sm:text-2xl font-bold text-green-700">{completedTasks}</p>
+          </div>
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600">Overdue Tasks</h3>
+            <p className="text-lg sm:text-2xl font-bold text-red-700">{overdueTasks}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Section: Form and Task Cards */}
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        {/* Form Section */}
+        <div className="w-full lg:w-1/3">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white p-4 sm:p-6 rounded-lg shadow-md space-y-3 sm:space-y-4"
+          >
             <input
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              placeholder="Task Name"
-              className="border p-2 rounded-lg"
+              type="text"
+              name="task"
+              value={form.task}
+              onChange={handleChange}
+              placeholder="Task"
+              required
+              className="w-full p-2 border rounded text-sm sm:text-base"
             />
+
             <select
-              value={assignedUser}
-              onChange={(e) => setAssignedUser(e.target.value)}
-              className="border p-2 rounded-lg"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="w-full p-2 border rounded text-sm sm:text-base"
             >
-              <option value="">Assign User</option>
+              <option value="">Assign to (select user)</option>
               {users.map((user) => (
-                <option key={user._id || user.id} value={user.username}>
-                  {user.username}
+                <option key={user._id} value={user.email}>
+                  {user.username} ({user.email})
                 </option>
               ))}
             </select>
+
             <input
               type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="border p-2 rounded-lg"
+              name="dueDate"
+              value={form.dueDate}
+              onChange={handleChange}
+              required
+              className="w-full p-2 border rounded text-sm sm:text-base"
             />
-            <input
-              type="number"
-              value={progress}
-              min="0"
-              max="100"
-              onChange={(e) => setProgress(e.target.value)}
-              className="border p-2 rounded-lg"
-              placeholder="Progress (%)"
-            />
+
             <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="border p-2 rounded-lg"
+              name="priority"
+              value={form.priority}
+              onChange={handleChange}
+              className="w-full p-2 border rounded text-sm sm:text-base"
             >
-              <option value="">Priority</option>
-              <option value="High">🔥 High</option>
-              <option value="Medium">⚠️ Medium</option>
-              <option value="Low">🧊 Low</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
 
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="border p-2 rounded-lg"
-            />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                setImage(file);
-                setImagePreview(URL.createObjectURL(file));
-              }}
-              className="border p-2 rounded-lg"
-            />
-          </div>
+            <select
+              name="fileType"
+              value={form.fileType}
+              onChange={handleChange}
+              className="w-full p-2 border rounded text-sm sm:text-base"
+            >
+              <option value="">Choose File Type (optional)</option>
+              <option value="file">Document (.pdf, .docx)</option>
+              <option value="image">Image</option>
+            </select>
 
-          {imagePreview && (
-            <div className="mt-4">
-              <p className="text-sm font-medium mb-1">Image Preview:</p>
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-32 h-32 object-cover border rounded"
+            {form.fileType && (
+              <input
+                type="file"
+                name="file"
+                accept={form.fileType === "file" ? ".pdf,.docx" : "image/*"}
+                onChange={handleChange}
+                className="w-full text-sm sm:text-base"
               />
-            </div>
-          )}
+            )}
 
-          <button
-            onClick={handleCreateOrUpdateTask}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            {editingId ? "Update Task" : "Assign Task"}
-          </button>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm sm:text-base cursor-pointer"
+            >
+              {form.taskId ? "Update Task" : "Assign Task"}
+            </button>
+          </form>
         </div>
 
-        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-
-        <h2 className="font-bold text-2xl mb-6">Assigned Projects</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects
-            .filter((project) => project && project.userName && project.task)
-            .map((project) => (
+        {/* Task Cards Section */}
+        <div className="w-full lg:w-2/3 mt-4 lg:mt-0">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tasks.map((task) => (
               <AdminProjectCard
-                key={project._id || project.id}
-                userName={project.userName}
-                task={project.task}
-                userProgress={project.progress}
-                taskDueDate={project.dueDate}
-                status={project.status}
-                priority={project.priority}
-                attachmentUrl={project.attachmentUrl}
-                onEdit={() => handleEdit(project)}
-                onDelete={() => handleDelete(project._id || project.id)}
+                key={task._id}
+                task={task.task}
+                assignedTo={task.email}
+                userProgress={task.progress || 0}
+                taskDueDate={task.dueDate}
+                status={task.progress === 100 ? "Completed" : task.progress > 0 ? "Active" : "To-Do"}
+                priority={task.priority}
+                attachmentUrl={task.fileUrl || task.imageUrl}
+                onEdit={() => handleEdit(task._id)}
+                onDelete={() => handleDelete(task._id)}
               />
             ))}
+          </div>
         </div>
       </div>
     </div>

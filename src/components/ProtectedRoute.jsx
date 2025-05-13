@@ -1,22 +1,38 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+// components/ProtectedRoute.jsx
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import axios from "axios";
 
-const ProtectedRoute = ({ role, allowedRoles }) => {
-  // Assuming you have a logic to check if the user is logged in
-  const isAuthenticated = !!role; // Adjust this logic to reflect actual auth state
+const ProtectedRoute = ({ children, allowedRole }) => {
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
-  if (!isAuthenticated) {
-    // If not authenticated, redirect to login
-    return <Navigate to="/login" />;
-  }
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:8080/api/auth/me", {
+          withCredentials: true,
+        });
 
-  if (!allowedRoles.includes(role)) {
-    // If user does not have the allowed role, redirect to a 'No Access' or error page
-    return <Navigate to="/no-access" />;
-  }
+        const userRole = res.data.role;
+        if (allowedRole && userRole !== allowedRole) {
+          setAuthorized(false);
+        } else {
+          setAuthorized(true);
+        }
+      } catch {
+        setAuthorized(false);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // If authenticated and has the correct role, render the protected component
-  return <Outlet />;
+    verifyUser();
+  }, [allowedRole]);
+
+  if (loading) return <div className="p-6">Checking access...</div>;
+
+  return authorized ? children : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;

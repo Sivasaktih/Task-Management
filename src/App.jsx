@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -10,34 +11,38 @@ import ClientMessages from "./components/ClientMessages";
 import Settings from "./components/Settings";
 import TeamCollaboration from "./components/TeamCollaboration";
 import Home from "./components/Home";
-
-// Function to check authentication
-const isAuthenticated = () => {
-  return !!localStorage.getItem("loggedInUser");
-};
-
-// Function to get user role
-const getUserRole = () => {
-  const user = JSON.parse(localStorage.getItem("loggedInUser"));
-  return user ? user.role : null;
-};
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [role, setRole] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-  const [role, setRole] = useState(getUserRole());
+
+  const fetchAuthenticatedUser = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/auth/me", {
+        withCredentials: true,
+      });
+      setAuthenticated(true);
+      setRole(res.data.role);
+    } catch (err) {
+      setAuthenticated(false);
+      setRole(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const updateAuthState = () => {
-      setAuthenticated(isAuthenticated());
-      setRole(getUserRole());
-    };
-
-    window.addEventListener("storage", updateAuthState);
-    return () => window.removeEventListener("storage", updateAuthState);
+    fetchAuthenticatedUser();
   }, []);
 
   const toggleSettings = () => setShowSettings(!showSettings);
+
+  if (loading) {
+    return <div className="p-6">Checking authentication...</div>;
+  }
 
   return (
     <Router>
@@ -47,7 +52,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Protected Layout Route */}
+        {/* Authenticated User Routes */}
         {authenticated ? (
           <Route
             path="/*"
@@ -58,29 +63,41 @@ function App() {
                   <Routes>
                     <Route
                       path="/admin-dashboard"
-                      element={<AdminDashboard />}
+                      element={
+                        <ProtectedRoute allowedRole="admin">
+                          <AdminDashboard />
+                        </ProtectedRoute>
+                      }
                     />
                     <Route
                       path="/user-dashboard"
-                      element={<UserDashboard />}
+                      element={
+                        <ProtectedRoute allowedRole="user">
+                          <UserDashboard />
+                        </ProtectedRoute>
+                      }
                     />
                     <Route
                       path="/client-messages"
-                      element={<ClientMessages />}
+                      element={
+                        <ProtectedRoute>
+                          <ClientMessages role={role} />
+                        </ProtectedRoute>
+                      }
                     />
                     <Route
                       path="/teamCollaboration"
-                      element={<TeamCollaboration role={role} />}
+                      element={
+                        <ProtectedRoute>
+                          <TeamCollaboration role={role} />
+                        </ProtectedRoute>
+                      }
                     />
                     <Route
                       path="*"
                       element={
                         <Navigate
-                          to={
-                            role === "admin"
-                              ? "/admin-dashboard"
-                              : "/user-dashboard"
-                          }
+                          to={role === "admin" ? "/admin-dashboard" : "/user-dashboard"}
                           replace
                         />
                       }
@@ -92,7 +109,6 @@ function App() {
             }
           />
         ) : (
-          // Redirect unknown routes to login if not authenticated
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
       </Routes>
